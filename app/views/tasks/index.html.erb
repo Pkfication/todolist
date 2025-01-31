@@ -1,0 +1,87 @@
+<div class="space-y-6">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">My Tasks</h1>
+    <%= link_to 'Create New Task', new_task_path, class: 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105' %>
+  </div>
+
+  <% if @tasks_by_status.values.flatten.empty? %>
+    <div class="bg-gray-50 p-6 rounded-lg text-center">
+      <p class="text-gray-600">No tasks found. Create your first task!</p>
+    </div>
+  <% else %>
+    <div x-data="{ activeTab: 'all' }" class="w-full">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-4">
+          <% (["all"] + @status_order).each do |status| %>
+            <button 
+              @click="activeTab = '<%= status %>'"
+              :class="activeTab === '<%= status %>' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+              class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+            >
+              <%= status == 'all' ? 'All Tasks' : status.titleize %> Tasks
+              <span class="ml-2 bg-gray-200 text-gray-800 rounded-full px-2 py-0.5 text-xs">
+                <%= status == 'all' ? @tasks_by_status.values.flatten.count : @tasks_by_status[status]&.count || 0 %>
+              </span>
+            </button>
+          <% end %>
+        </nav>
+      </div>
+
+      <div class="mt-6">
+        <% (["all"] + @status_order).each do |status| %>
+          <div x-show="activeTab === '<%= status %>'" class="space-y-4">
+            <% tasks = status == 'all' ? @tasks_by_status.values.flatten : @tasks_by_status[status] || [] %>
+            <% if tasks.empty? %>
+              <p class="text-gray-500 text-sm text-center">
+                <%= status == 'all' ? 'No tasks found' : "No tasks in #{status} status" %>
+              </p>
+            <% else %>
+              <% tasks.each do |task| %>
+                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-300 ease-in-out relative">
+                  <div class="flex items-start">
+                    <div class="flex-grow pr-4">
+                      <h3 class="text-base font-medium <%= task_status_color(task.status) %>"><%= task.title %></h3>
+                      <% if task.description.present? %>
+                        <p class="text-sm text-gray-600 mt-1"><%= truncate(task.description, length: 50) %></p>
+                      <% end %>
+                    </div>
+                    <div class="absolute top-4 right-4 flex space-x-2">
+                      <%= link_to 'Edit', edit_task_path(task), class: 'text-yellow-500 hover:text-yellow-600 text-sm' %>
+                      <%= button_to 'Delete', task_path(task), method: :delete, 
+                          data: { confirm: 'Are you sure you want to delete this task?' }, 
+                          class: 'text-red-500 hover:text-red-600 text-sm' %>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-2 flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-sm <%= task_status_badge(task.status) %>"><%= task.status.titleize %></span>
+                      
+                      <% unless task.status == 'completed' %>
+                        <%= button_to update_status_task_path(task, from_all_tasks: status == 'all' ? 'true' : 'false'), method: :patch, 
+                            class: 'bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-md text-xs transition duration-300 ease-in-out transform hover:scale-105' do %>
+                          <% case task.status 
+                             when 'pending' %>
+                            Start
+                          <% when 'in_progress' %>
+                            Complete
+                          <% end %>
+                        <% end %>
+                      <% end %>
+                    </div>
+                    
+                    <% if task.due_date %>
+                      <span class="text-xs text-gray-500">
+                        Due: <%= task.due_date.strftime("%b %d") %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
